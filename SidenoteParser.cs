@@ -1,21 +1,19 @@
-﻿using Markdig.Extensions.Footnotes;
-using Markdig.Helpers;
+﻿using Markdig.Helpers;
 using Markdig.Parsers;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 
-namespace SideNotes
+namespace Sidenotes
 {
 	public class SidenoteParser : BlockParser
 	{
-
 		/// <summary>
-		/// The key used to store at the document level the pending <see cref="FootnoteGroup"/>
+		/// The key used to store at the document level the pending <see cref="SidenoteGroup"/>
 		/// </summary>
 		private static readonly object DocumentKey = typeof(Sidenote);
 
 		/// <summary>
-		/// Initializes a new instance of the FootnoteParser class.
+		/// Initializes a new instance of the SidenoteParser class.
 		/// </summary>
 		public SidenoteParser()
 		{
@@ -32,9 +30,9 @@ namespace SideNotes
 
 		private BlockState TryOpen(BlockProcessor processor, bool isContinue)
 		{
-			// We expect footnote to appear only at document level and not indented more than a code indent block
+			// We expect sidenote to appear only at document level and not indented more than a code indent block
 			var currentContainer = processor.GetCurrentContainerOpened();
-			if (processor.IsCodeIndent || (!isContinue && currentContainer.GetType() != typeof(MarkdownDocument)) || (isContinue && !(currentContainer is FootnoteGroup)))
+			if (processor.IsCodeIndent || (!isContinue && currentContainer.GetType() != typeof(MarkdownDocument)) || (isContinue && !(currentContainer is SidenoteGroup)))
 			{
 				return BlockState.None;
 			}
@@ -61,26 +59,27 @@ namespace SideNotes
 				Span = new SourceSpan(processor.Start, processor.Line.End),
 			};
 
-			// Maintain a list of all footnotes at document level
-			var footnotes = processor.Document.GetData(DocumentKey) as FootnoteGroup;
-			if (footnotes == null)
+			// Maintain a list of all sidenotes at document level (so we can clean them up later)
+			var notes = processor.Document.GetData(DocumentKey) as SidenoteGroup;
+			if (notes == null)
 			{
-				footnotes = new FootnoteGroup(this);
-				processor.Document.Add(footnotes);
-				processor.Document.SetData(DocumentKey, footnotes);
+				notes = new SidenoteGroup(this);
+				processor.Document.Add(notes);
+				processor.Document.SetData(DocumentKey, notes);
 				processor.Document.ProcessInlinesEnd += Document_ProcessInlinesEnd;
 			}
-			footnotes.Add(note);
+			notes.Add(note);
 
 			var linkRef = new SidenoteLinkReferenceDefinition(note)
 			{
-				CreateLinkInline = CreateLinkToFootnote,
+				CreateLinkInline = CreateLinkToSidenote,
 				Line = processor.LineIndex,
 				Column = saved,
 				Span = new SourceSpan(start, processor.Start - 2), // account for ]:
 				LabelSpan = labelSpan,
 				Label = label
 			};
+
 			processor.Document.SetLinkReferenceDefinition(note.Label, linkRef, true);
 			processor.NewBlocks.Push(note);
 			return BlockState.Continue;
@@ -130,78 +129,57 @@ namespace SideNotes
 			return BlockState.Continue;
 		}
 
-		/// <summary>
-		/// Add footnotes to the end of the document
-		/// </summary>
-		/// <param name="state">The processor.</param>
-		/// <param name="inline">The inline.</param>
 		private void Document_ProcessInlinesEnd(InlineProcessor state, Inline? inline)
 		{
-			var footnotes = (FootnoteGroup)state.Document.GetData(DocumentKey)!;
-			// Remove the footnotes from the document and readd them at the end
-			state.Document.Remove(footnotes);
-			state.Document.Add(footnotes);
+			var notes = (SidenoteGroup)state.Document.GetData(DocumentKey)!;
+
+			// Remove the sidenotes from the document 
+			state.Document.Remove(notes);
 			state.Document.RemoveData(DocumentKey);
 
-			footnotes.Sort(
-				(leftObj, rightObj) =>
-				{
-					var left = (Sidenote)leftObj;
-					var right = (Sidenote)rightObj;
+			notes.Sort(
+			(leftObj, rightObj) =>
+			{
+				var left = (Sidenote)leftObj;
+				var right = (Sidenote)rightObj;
 
-					return left.Order >= 0 && right.Order >= 0
-						? left.Order.CompareTo(right.Order)
-						: 0;
-				});
+				return left.Order >= 0 && right.Order >= 0
+					? left.Order.CompareTo(right.Order)
+					: 0;
+			});
 
 			int linkIndex = 0;
-			for (int i = 0; i < footnotes.Count; i++)
+			for (int i = 0; i < notes.Count; i++)
 			{
-				var footnote = (Sidenote)footnotes[i];
-				if (footnote.Order < 0)
+				var note = (Sidenote)notes[i];
+				if (note.Order < 0)
 				{
-					// Remove this footnote if it doesn't have any links
-					footnotes.RemoveAt(i);
+					// Remove this note if it doesn't have any links
+					notes.RemoveAt(i);
 					i--;
 					continue;
 				}
 
-				// Insert all footnote backlinks
-				var paragraphBlock = footnote.LastChild as ParagraphBlock;
-				if (paragraphBlock is null)
-				{
-					paragraphBlock = new ParagraphBlock();
-					footnote.Add(paragraphBlock);
-				}
-
-				paragraphBlock.Inline ??= new ContainerInline();
-
-				foreach (var link in footnote.Links)
+				foreach (var link in note.Links)
 				{
 					linkIndex++;
 					link.Index = linkIndex;
-					var backLink = new SidenoteLink(footnote)
-					{
-						Index = linkIndex,
-						IsBackLink = true
-					};
-					paragraphBlock.Inline.AppendChild(backLink);
 				}
 			}
 		}
 
-		private static Inline CreateLinkToFootnote(InlineProcessor state, LinkReferenceDefinition linkRef, Inline? child)
+		private static Inline CreateLinkToSidenote(InlineProcessor state, LinkReferenceDefinition linkRef, Inline? child)
 		{
-			var footnote = ((SidenoteLinkReferenceDefinition)linkRef).Footnote;
-			if (footnote.Order < 0)
+			var note = ((SidenoteLinkReferenceDefinition)linkRef).Sidenote;
+			if (note.Order < 0)
 			{
-				var footnotes = (FootnoteGroup)state.Document.GetData(DocumentKey)!;
-				footnotes.CurrentOrder++;
-				footnote.Order = footnotes.CurrentOrder;
+				var notes = (SidenoteGroup)state.Document.GetData(DocumentKey)!;
+				notes.CurrentOrder++;
+				note.Order = notes.CurrentOrder;
 			}
 
-			var link = new SidenoteLink(footnote);
-			footnote.Links.Add(link);
+			var link = new SidenoteLink(note);
+			note.Links.Add(link);
 
 			return link;
 		}

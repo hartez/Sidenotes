@@ -2,7 +2,7 @@
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
 
-namespace SideNotes
+namespace Sidenotes
 {
 	public class HtmlSidenoteRenderer : HtmlObjectRenderer<SidenoteLink>
 	{
@@ -11,48 +11,52 @@ namespace SideNotes
 		/// </summary>
 		public HtmlSidenoteRenderer()
 		{
-			BackLinkString = "&#8617;";
-			FootnoteLinkClass = "footnote-ref";
-			FootnoteBackLinkClass = "footnote-back-ref";
+			SidenoteClass = "sidenote";
+			SidenoteRefClass = "sidenote-ref";
+			SidenoteContentClass = "sidenote-content";
 		}
 		/// <summary>
-		/// Gets or sets the back link string.
+		/// Gets or sets the class for the sidenote reference
 		/// </summary>
-		public string BackLinkString { get; set; }
+		public string SidenoteRefClass { get; set; }
 
 		/// <summary>
-		/// Gets or sets the footnote link class.
+		/// Gets or sets the sidenote class.
 		/// </summary>
-		public string FootnoteLinkClass { get; set; }
+		public string SidenoteClass { get; set; }
 
 		/// <summary>
-		/// Gets or sets the footnote back link class.
+		/// Gets or sets the sidenote content class.
 		/// </summary>
-		public string FootnoteBackLinkClass { get; set; }
+		public string SidenoteContentClass { get; set; }
 
 		/// <summary>
 		/// Writes the object to the specified renderer.
 		/// </summary>
 		protected override void Write(HtmlRenderer renderer, SidenoteLink link)
 		{
-			var order = link.Footnote.Order;
+			var content = link.Sidenote.LastChild as ParagraphBlock;
 
-
-			if (!link.IsBackLink)
+			if ((content?.Inline) == null)
 			{
-				var p = link.Footnote.LastChild as ParagraphBlock;
-
-				if (p?.Inline != null )
-				{
-					renderer.Write($"<span class=\"sidenote\">");
-					renderer.WriteChildren(p.Inline);
-					renderer.Write($"</span>");
-				}
+				return;
 			}
 
-			//renderer.Write(link.IsBackLink
-			//	? $"<a href=\"#fnref:{link.Index}\" class=\"{FootnoteBackLinkClass}\">{BackLinkString}</a>"
-			//	: $"<a id=\"fnref:{link.Index}\" href=\"#fn:{order}\" class=\"{FootnoteLinkClass}\"><sup>{order}</sup></a>");
+			var index = link.Index;
+
+			renderer.Write($"<span class=\"{SidenoteClass}\">");
+
+			renderer.Write($"<sup class=\"{SidenoteRefClass}\">{index}</sup>");
+
+			renderer.Write($"<span class=\"{SidenoteContentClass}\">");
+
+			renderer.Write($"<span class=\"{SidenoteRefClass}\">{index}</span>");
+
+			renderer.WriteChildren(content.Inline);
+
+			renderer.Write($"</span>");
+
+			renderer.Write($"</span>");
 		}
 	}
 }

@@ -1,21 +1,17 @@
 ﻿using Markdig.Syntax;
 
-namespace SideNotes
+namespace Sidenotes
 {
-	public class SidenoteLinkReferenceDefinition : LinkReferenceDefinition
+	/// <summary>
+	/// Initializes a new instance of the SidenoteLinkReferenceDefinition class.
+	/// </summary>
+	public class SidenoteLinkReferenceDefinition(Sidenote sidenote) : LinkReferenceDefinition
 	{
-		/// <summary>
-		/// Initializes a new instance of the FootnoteLinkReferenceDefinition class.
-		/// </summary>
-		public SidenoteLinkReferenceDefinition(Sidenote footnote)
-		{
-			Footnote = footnote;
-		}
 
 		/// <summary>
 		/// Gets or sets the footnote related to this link reference definition.
 		/// </summary>
-		public Sidenote Footnote { get; set; }
+		public Sidenote Sidenote { get; set; } = sidenote;
 	}
 }
 

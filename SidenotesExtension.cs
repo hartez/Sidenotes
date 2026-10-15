@@ -1,9 +1,10 @@
 ﻿using Markdig;
+using Markdig.Extensions.Footnotes;
 using Markdig.Renderers;
 
-namespace SideNotes
+namespace Sidenotes
 {
-	public class SidenoteExtension : IMarkdownExtension
+	public class SidenotesExtension : IMarkdownExtension
 	{
 		public void Setup(MarkdownPipelineBuilder pipeline)
 		{
@@ -11,6 +12,7 @@ namespace SideNotes
 			{
 				// Insert the parser before any other parsers
 				pipeline.BlockParsers.Insert(0, new SidenoteParser());
+				pipeline.BlockParsers.RemoveAll(p => p is FootnoteParser);
 			}
 		}
 

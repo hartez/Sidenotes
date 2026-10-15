@@ -1,31 +1,25 @@
-﻿using Markdig.Extensions.Footnotes;
-using Markdig.Parsers;
+﻿using Markdig.Parsers;
 using Markdig.Syntax;
 
-namespace SideNotes
+namespace Sidenotes
 {
-	public class Sidenote : ContainerBlock
+	/// <summary>
+	/// Initializes a new instance of the Sidenote class.
+	/// </summary>
+	public class Sidenote(BlockParser parser) : ContainerBlock(parser)
 	{
 		/// <summary>
-		/// Initializes a new instance of the Footnote class.
-		/// </summary>
-		public Sidenote(BlockParser parser) : base(parser)
-		{
-			Order = -1;
-		}
-
-		/// <summary>
-		/// Gets or sets the label used by this footnote.
+		/// Gets or sets the label used by this sidenote.
 		/// </summary>
 		public string? Label { get; set; }
 
 		/// <summary>
-		/// Gets or sets the order of this footnote (determined by the order of the <see cref="FootnoteLink"/> in the document)
+		/// Gets or sets the order of this sidenote (determined by the order of the <see cref="SidenoteLink"/> in the document)
 		/// </summary>
-		public int Order { get; set; }
+		public int Order { get; set; } = -1;
 
 		/// <summary>
-		/// Gets the links referencing this footnote.
+		/// Gets the links referencing this sidenote.
 		/// </summary>
 		public List<SidenoteLink> Links { get; } = new();
 
