@@ -1,4 +1,4 @@
 <Solution>
-  <Project Path="../Sidenotes.Tests/Sidenotes.Tests.csproj" />
-  <Project Path="Sidenotes.csproj" />
+  <Project Path="Sidenotes.Tests/Sidenotes.Tests.csproj" />
+  <Project Path="Sidenotes/Sidenotes.csproj" />
 </Solution>
